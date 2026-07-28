@@ -53,6 +53,10 @@ button {
 .app {
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr) 380px;
+  /* A definite row height is required, otherwise the row grows to its tallest
+     content (the results list), pushing the chat input off-screen and stopping
+     the visualization from scrolling internally. */
+  grid-template-rows: minmax(0, 1fr);
   height: 100vh;
   width: 100vw;
   overflow: hidden;
@@ -66,6 +70,7 @@ button {
   flex-direction: column;
   padding: 16px 12px;
   min-width: 0;
+  min-height: 0;
 }
 
 .sidebar__brand {
@@ -185,11 +190,88 @@ button {
   border-top: 1px solid var(--border);
 }
 
+/* ---- Chats list ---- */
+.sidebar__chats {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  margin-top: 14px;
+}
+
+.new-chat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  margin-bottom: 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 13px;
+  transition: border-color 0.12s ease, color 0.12s ease, background 0.12s ease;
+}
+
+.new-chat:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.chat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.chat-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  text-align: left;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.chat-item:hover {
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+.chat-item--active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.chat-item__icon {
+  flex: none;
+}
+
+.chat-item__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* =================== VISUALIZATION =================== */
 .viz {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
   background: var(--bg);
 }
 
@@ -213,6 +295,7 @@ button {
 
 .viz__body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 24px;
 }
@@ -502,6 +585,7 @@ button {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
 }
 
 .chat__header {
@@ -526,6 +610,7 @@ button {
 
 .chat__messages {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 18px;
   display: flex;
@@ -700,12 +785,14 @@ button {
 
 /* scrollbars */
 .viz__body::-webkit-scrollbar,
-.chat__messages::-webkit-scrollbar {
+.chat__messages::-webkit-scrollbar,
+.chat-list::-webkit-scrollbar {
   width: 10px;
 }
 
 .viz__body::-webkit-scrollbar-thumb,
-.chat__messages::-webkit-scrollbar-thumb {
+.chat__messages::-webkit-scrollbar-thumb,
+.chat-list::-webkit-scrollbar-thumb {
   background: #d7dbe1;
   border-radius: 999px;
   border: 3px solid transparent;

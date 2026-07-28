@@ -1,4 +1,4 @@
-import { Cloud, IdCard, Users, FolderKanban } from 'lucide-react'
+import { Cloud, IdCard, Users, FolderKanban, Plus, MessageSquare } from 'lucide-react'
 
 const SOURCES = [
   { id: 'salesforce', name: 'Salesforce', icon: Cloud, status: 'connected' },
@@ -7,7 +7,13 @@ const SOURCES = [
   { id: 'pm', name: 'PM', icon: FolderKanban, status: 'soon' },
 ]
 
-export default function Sidebar({ activeSource }) {
+export default function Sidebar({
+  activeSource,
+  conversations = [],
+  activeId,
+  onNewChat,
+  onSelectChat,
+}) {
   return (
     <aside className="sidebar">
       <div className="sidebar__brand">
@@ -45,6 +51,28 @@ export default function Sidebar({ activeSource }) {
             </div>
           )
         })}
+      </div>
+
+      <div className="sidebar__section sidebar__chats">
+        <div className="sidebar__section-label">Chats</div>
+        <button type="button" className="new-chat" onClick={onNewChat}>
+          <Plus size={16} />
+          <span>New chat</span>
+        </button>
+        <div className="chat-list">
+          {conversations.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              className={'chat-item' + (c.id === activeId ? ' chat-item--active' : '')}
+              onClick={() => onSelectChat(c.id)}
+              title={c.title}
+            >
+              <MessageSquare size={16} className="chat-item__icon" />
+              <span className="chat-item__title">{c.title}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="sidebar__footer">Proof of concept</div>

@@ -302,6 +302,30 @@ def _get_session():
     return _SESSION
 
 
+def _invalidate_session():
+    """Drop the cached session so the next _get_session() re-authenticates.
+
+    Salesforce access tokens expire (and dev-org sessions time out on
+    inactivity); once that happens, requests made with the cached token fail
+    with HTTP 401 / INVALID_SESSION_ID and the session must be rebuilt."""
+    global _SESSION
+    _SESSION = None
+
+
+def _is_session_expired(exc):
+    """True if an HTTPError is Salesforce rejecting an expired/invalid token."""
+    resp = getattr(exc, "response", None)
+    if resp is None or resp.status_code != 401:
+        return False
+    try:
+        body = resp.json()
+    except ValueError:
+        return True  # 401 with a non-JSON body — treat as an auth failure
+    if isinstance(body, list):
+        return any(item.get("errorCode") == "INVALID_SESSION_ID" for item in body)
+    return True
+
+
 def _normalize_contact(instance_url, headers, api_version, c):
     """Turn a raw Contact record into the unified person shape the UI renders."""
     opportunities = []
@@ -388,14 +412,23 @@ def search_people(name=None, email=None, company=None, phone=None, title=None,
         name=name, email=email, company=company, phone=phone, title=title,
         id=id, contacts_only=contacts_only, leads_only=leads_only, limit=limit,
     )
-    instance_url, headers, api_version = _get_session()
 
-    contacts = [] if leads_only else find_contacts(instance_url, headers, api_version, args)
-    leads = [] if contacts_only else find_leads(instance_url, headers, api_version, args)
+    # Retry once on an expired cached token: refresh the session and re-run so a
+    # long-lived server doesn't fail the first request after the token times out.
+    for attempt in range(2):
+        instance_url, headers, api_version = _get_session()
+        try:
+            contacts = [] if leads_only else find_contacts(instance_url, headers, api_version, args)
+            leads = [] if contacts_only else find_leads(instance_url, headers, api_version, args)
 
-    people = [_normalize_contact(instance_url, headers, api_version, c) for c in contacts]
-    people += [_normalize_lead(l) for l in leads]
-    return people
+            people = [_normalize_contact(instance_url, headers, api_version, c) for c in contacts]
+            people += [_normalize_lead(l) for l in leads]
+            return people
+        except requests.HTTPError as exc:
+            if attempt == 0 and _is_session_expired(exc):
+                _invalidate_session()
+                continue
+            raise
 
 
 def parse_args():
