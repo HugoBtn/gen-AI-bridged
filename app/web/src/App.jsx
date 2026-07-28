@@ -55,6 +55,8 @@ export default function App() {
   })
   const [conversations, setConversations] = useState(seed.conversations)
   const [activeId, setActiveId] = useState(seed.activeId)
+  // The search cheat-sheet opens on arrival and steps aside once you search.
+  const [guideOpen, setGuideOpen] = useState(true)
 
   // Persist chats + their visualizations so they reload across refreshes.
   useEffect(() => {
@@ -76,10 +78,33 @@ export default function App() {
     )
   }
 
+  // The guide never covers a spinner, an error or a person's detail sheet.
+  const guideVisible =
+    guideOpen && !active.loading && !active.vizError && !active.selectedPerson
+
+  function toggleGuide() {
+    if (guideVisible) {
+      setGuideOpen(false)
+      return
+    }
+    // Opening it takes precedence over whatever else is on screen. The error
+    // text stays readable in the chat transcript.
+    setGuideOpen(true)
+    patchConversation(activeId, { selectedPerson: null, vizError: null })
+  }
+
   function handleNewChat() {
     const c = newConversation()
     setConversations((prev) => [c, ...prev])
     setActiveId(c.id)
+    setGuideOpen(true)
+  }
+
+  function handleSelectChat(id) {
+    setActiveId(id)
+    // A chat with nothing in it yet gets the cheat-sheet back.
+    const target = conversations.find((c) => c.id === id)
+    if (target && !target.hasSearched) setGuideOpen(true)
   }
 
   async function handleSend(question) {
@@ -87,6 +112,7 @@ export default function App() {
     if (!q || active.loading) return
 
     const id = activeId
+    setGuideOpen(false)
     patchConversation(id, (c) => ({
       messages: [...c.messages, { role: 'user', text: q }],
       loading: true,
@@ -123,7 +149,7 @@ export default function App() {
         conversations={conversations}
         activeId={activeId}
         onNewChat={handleNewChat}
-        onSelectChat={setActiveId}
+        onSelectChat={handleSelectChat}
       />
       <Visualization
         loading={active.loading}
@@ -134,6 +160,9 @@ export default function App() {
         selectedPerson={active.selectedPerson}
         onSelect={(p) => patchConversation(activeId, { selectedPerson: p })}
         onBack={() => patchConversation(activeId, { selectedPerson: null })}
+        guideVisible={guideVisible}
+        onToggleGuide={toggleGuide}
+        onExample={handleSend}
       />
       <ChatPanel
         key={activeId}

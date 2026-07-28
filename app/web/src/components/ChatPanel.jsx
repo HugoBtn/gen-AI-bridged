@@ -1,12 +1,16 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, Bot } from 'lucide-react'
+import { Send, Bot, ChevronDown } from 'lucide-react'
 import Message from './Message'
-
-const SUGGESTIONS = ['find a Director', 'find a Manager', 'who works in Sales']
+import { QUICK_SUGGESTIONS, MORE_SUGGESTIONS } from '../searchGuide'
 
 export default function ChatPanel({ messages, loading, onSend }) {
   const [input, setInput] = useState('')
+  const [showAllSuggestions, setShowAllSuggestions] = useState(false)
   const scrollRef = useRef(null)
+
+  const suggestions = showAllSuggestions
+    ? [...QUICK_SUGGESTIONS, ...MORE_SUGGESTIONS]
+    : QUICK_SUGGESTIONS
 
   useEffect(() => {
     const el = scrollRef.current
@@ -50,11 +54,25 @@ export default function ChatPanel({ messages, loading, onSend }) {
       </div>
 
       <div className="chat__suggestions">
-        {SUGGESTIONS.map((s) => (
+        {suggestions.map((s) => (
           <button key={s} className="chip" onClick={() => onSend(s)} disabled={loading}>
             {s}
           </button>
         ))}
+        <button
+          type="button"
+          className="chip chip--toggle"
+          onClick={() => setShowAllSuggestions((v) => !v)}
+          aria-expanded={showAllSuggestions}
+        >
+          <ChevronDown
+            size={13}
+            className={
+              'chip__chevron' + (showAllSuggestions ? ' chip__chevron--open' : '')
+            }
+          />
+          {showAllSuggestions ? 'Less' : 'More'}
+        </button>
       </div>
 
       <form className="chat__input" onSubmit={submit}>

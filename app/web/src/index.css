@@ -106,13 +106,80 @@ button {
   margin-top: 4px;
 }
 
-.sidebar__section-label {
+/* Collapsible section header (Data sources / Chats) */
+.sidebar__section-head {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.sidebar__section-toggle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-subtle);
-  padding: 6px 8px;
+  text-align: left;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+
+.sidebar__section-toggle:hover {
+  color: var(--text-muted);
+  background: var(--panel-2);
+}
+
+.sidebar__section-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar__chevron {
+  flex: none;
+  transition: transform 0.15s ease;
+}
+
+.sidebar__chevron--collapsed {
+  transform: rotate(-90deg);
+}
+
+.sidebar__count {
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #f1f2f4;
+  color: var(--text-subtle);
+}
+
+.sidebar__icon-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  color: var(--text-subtle);
+  transition: color 0.12s ease, background 0.12s ease;
+}
+
+.sidebar__icon-btn:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .source {
@@ -199,6 +266,11 @@ button {
   margin-top: 14px;
 }
 
+/* Folded away: give the space back instead of holding an empty column. */
+.sidebar__chats--collapsed {
+  flex: 0 0 auto;
+}
+
 .new-chat {
   display: flex;
   align-items: center;
@@ -276,9 +348,44 @@ button {
 }
 
 .viz__header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   padding: 18px 24px;
   border-bottom: 1px solid var(--border);
   background: var(--panel);
+}
+
+.viz__heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.viz__tips {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  padding: 8px 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  transition: border-color 0.12s ease, color 0.12s ease, background 0.12s ease;
+}
+
+.viz__tips:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.viz__tips--active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .viz__title {
@@ -371,6 +478,106 @@ button {
 
 .person-card__meta svg {
   flex: none;
+  color: var(--text-subtle);
+}
+
+/* =================== SEARCH GUIDE =================== */
+.guide {
+  max-width: 900px;
+}
+
+.guide__intro {
+  margin-bottom: 20px;
+}
+
+.guide__title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.guide__hint {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.guide__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.guide__card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.guide__card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.guide__icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  flex: none;
+}
+
+.guide__card-title {
+  font-size: 14px;
+  font-weight: 650;
+  margin: 0;
+}
+
+.guide__card-hint {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.guide__patterns {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.guide__pattern {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  overflow-wrap: anywhere;
+}
+
+.guide__examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.chip--example {
+  font-size: 12px;
+  padding: 5px 10px;
+}
+
+.guide__note {
+  margin: 20px 0 0;
+  font-size: 12px;
   color: var(--text-subtle);
 }
 
@@ -715,6 +922,10 @@ button {
   flex-wrap: wrap;
   gap: 8px;
   padding: 12px 14px 4px;
+  /* Expanding the list must never push the input off-screen. */
+  max-height: 168px;
+  overflow-y: auto;
+  flex: none;
 }
 
 .chip {
@@ -736,6 +947,23 @@ button {
 .chip:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+/* “More / Less” chip that reveals the rest of the search options */
+.chip--toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-style: dashed;
+  font-weight: 600;
+}
+
+.chip__chevron {
+  transition: transform 0.15s ease;
+}
+
+.chip__chevron--open {
+  transform: rotate(180deg);
 }
 
 .chat__input {
@@ -786,12 +1014,14 @@ button {
 /* scrollbars */
 .viz__body::-webkit-scrollbar,
 .chat__messages::-webkit-scrollbar,
+.chat__suggestions::-webkit-scrollbar,
 .chat-list::-webkit-scrollbar {
   width: 10px;
 }
 
 .viz__body::-webkit-scrollbar-thumb,
 .chat__messages::-webkit-scrollbar-thumb,
+.chat__suggestions::-webkit-scrollbar-thumb,
 .chat-list::-webkit-scrollbar-thumb {
   background: #d7dbe1;
   border-radius: 999px;

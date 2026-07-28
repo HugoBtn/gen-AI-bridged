@@ -181,13 +181,29 @@ def find_contacts(instance_url, headers, api_version, args):
     return run_query(instance_url, headers, api_version, soql)
 
 
-def fetch_account_opportunities(instance_url, headers, api_version, account_id):
+def fetch_opportunities_by_account(instance_url, headers, api_version, account_ids):
+    """Fetch the Opportunities of many Accounts in ONE query, grouped by AccountId.
+
+    Querying one account at a time costs an API call per person found (an N+1:
+    10 matches = 10 extra calls). A single `AccountId IN (...)` query keeps any
+    search at a constant call count, and de-duplicates colleagues who share an
+    account for free. With --limit 25 the IN-list stays far below SOQL's
+    statement-length cap."""
+    ids = sorted({a for a in account_ids if a})
+    if not ids:
+        return {}
+
+    in_list = ", ".join(f"'{soql_escape(i)}'" for i in ids)
     soql = (
-        "SELECT Name, StageName, Amount, CloseDate, IsClosed "
-        f"FROM Opportunity WHERE AccountId = '{soql_escape(account_id)}' "
+        "SELECT AccountId, Name, StageName, Amount, CloseDate, IsClosed "
+        f"FROM Opportunity WHERE AccountId IN ({in_list}) "
         "ORDER BY CloseDate DESC"
     )
-    return run_query(instance_url, headers, api_version, soql)
+
+    grouped = {}
+    for o in run_query(instance_url, headers, api_version, soql):
+        grouped.setdefault(o["AccountId"], []).append(o)
+    return grouped
 
 
 # ---- Leads ----------------------------------------------------------------
@@ -231,7 +247,8 @@ def _rel(record, path, default="—"):
     return node if node not in (None, "") else default
 
 
-def print_contact(instance_url, headers, api_version, c):
+def print_contact(c, opportunities):
+    """Print one contact. `opportunities` is that account's pre-fetched deals."""
     print("=" * 64)
     print(f"CONTACT   {c.get('Name', '—')}    (Id: {c['Id']})")
     print("-" * 64)
@@ -248,10 +265,9 @@ def print_contact(instance_url, headers, api_version, c):
 
     # Account-level opportunities (the deals this person's company is in).
     if c.get("AccountId"):
-        opps = fetch_account_opportunities(instance_url, headers, api_version, c["AccountId"])
-        if opps:
-            print(f"  Opportunities on this account ({len(opps)}):")
-            for o in opps:
+        if opportunities:
+            print(f"  Opportunities on this account ({len(opportunities)}):")
+            for o in opportunities:
                 amount = f"€{o['Amount']:,.0f}" if o.get("Amount") is not None else "€—"
                 flag = "closed" if o.get("IsClosed") else "OPEN"
                 print(f"      - {o['Name']} | {o['StageName']} ({flag}) | {amount} | closes {o.get('CloseDate', '—')}")
@@ -326,18 +342,18 @@ def _is_session_expired(exc):
     return True
 
 
-def _normalize_contact(instance_url, headers, api_version, c):
-    """Turn a raw Contact record into the unified person shape the UI renders."""
-    opportunities = []
-    if c.get("AccountId"):
-        for o in fetch_account_opportunities(instance_url, headers, api_version, c["AccountId"]):
-            opportunities.append({
-                "name": o.get("Name"),
-                "stage": o.get("StageName"),
-                "amount": o.get("Amount"),
-                "closeDate": o.get("CloseDate"),
-                "isClosed": bool(o.get("IsClosed")),
-            })
+def _normalize_contact(c, opps_by_account):
+    """Turn a raw Contact record into the unified person shape the UI renders.
+
+    Opportunities come pre-fetched for the whole result set (see
+    fetch_opportunities_by_account) so normalizing costs no API call."""
+    opportunities = [{
+        "name": o.get("Name"),
+        "stage": o.get("StageName"),
+        "amount": o.get("Amount"),
+        "closeDate": o.get("CloseDate"),
+        "isClosed": bool(o.get("IsClosed")),
+    } for o in opps_by_account.get(c.get("AccountId")) or []]
 
     raw_cases = (c.get("Cases") or {}).get("records", []) if c.get("Cases") else []
     cases = [{
@@ -421,7 +437,13 @@ def search_people(name=None, email=None, company=None, phone=None, title=None,
             contacts = [] if leads_only else find_contacts(instance_url, headers, api_version, args)
             leads = [] if contacts_only else find_leads(instance_url, headers, api_version, args)
 
-            people = [_normalize_contact(instance_url, headers, api_version, c) for c in contacts]
+            # One extra query for every matched account at once — never one per
+            # person. A search costs at most 3 API calls whatever it returns.
+            opps_by_account = fetch_opportunities_by_account(
+                instance_url, headers, api_version, [c.get("AccountId") for c in contacts]
+            )
+
+            people = [_normalize_contact(c, opps_by_account) for c in contacts]
             people += [_normalize_lead(l) for l in leads]
             return people
         except requests.HTTPError as exc:
@@ -476,8 +498,12 @@ if __name__ == "__main__":
     total = len(contacts) + len(leads)
     print(f"\nFound {len(contacts)} contact(s) and {len(leads)} lead(s).\n")
 
+    opps_by_account = fetch_opportunities_by_account(
+        instance_url, headers, api_version, [c.get("AccountId") for c in contacts]
+    )
+
     for c in contacts:
-        print_contact(instance_url, headers, api_version, c)
+        print_contact(c, opps_by_account.get(c.get("AccountId")) or [])
     for l in leads:
         print_lead(l)
 
