@@ -11,6 +11,11 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 
+# Local sync store (salesforce_sync.py)
+*.db
+*.db-wal
+*.db-shm
+
 # Virtual environments
 .venv/
 venv/
